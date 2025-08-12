@@ -8,17 +8,17 @@
 
   <Id>12345678-1234-1234-1234-123456789012</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Your Organization</ProviderName>
+  <ProviderName>PNCB</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="ACGI Email Upload"/>
   <Description DefaultValue="Upload current email to ACGI customer record"/>
 
-  <IconUrl DefaultValue="https://your-domain.com/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://your-domain.com/icon-128.png"/>
-  <SupportUrl DefaultValue="https://your-domain.com/support"/>
+  <IconUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-128.png"/>
+  <SupportUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/"/>
 
   <AppDomains>
-    <AppDomain>https://your-domain.com</AppDomain>
+    <AppDomain>https://mwoodward-pncb.github.io</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -34,7 +34,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://your-domain.com/taskpane.html"/>
+        <SourceLocation DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane.html"/>
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -83,13 +83,13 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://your-domain.com/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://your-domain.com/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://your-domain.com/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://your-domain.com/commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://your-domain.com/taskpane.html"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="ACGI Upload"/>
