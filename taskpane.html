@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ACGI Email Upload</title>
+
+    <!-- Office JavaScript API -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 300px;
+        }
+
+        .header {
+            background: #0078d4;
+            color: white;
+            padding: 15px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 0;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .info-section {
+            background: #f3f2f1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            margin-bottom: 10px;
+        }
+
+        .info-item strong {
+            color: #323130;
+        }
+
+        .upload-btn {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .upload-btn:hover {
+            background: #106ebe;
+        }
+
+        .upload-btn:disabled {
+            background: #a19f9d;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .status.success {
+            background: #dff6dd;
+            color: #107c10;
+            border: 1px solid #107c10;
+        }
+
+        .status.error {
+            background: #fde7e9;
+            color: #d13438;
+            border: 1px solid #d13438;
+        }
+
+        .status.processing {
+            background: #fff4ce;
+            color: #8a8886;
+            border: 1px solid #8a8886;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .customer-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #8a8886;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>📧 ACGI Email Upload</h2>
+        </div>
+
+        <div class="info-section">
+            <div class="info-item">
+                <strong>Email:</strong> <span id="emailSubject">Loading...</span>
+            </div>
+            <div class="info-item">
+                <strong>From:</strong> <span id="emailSender">Loading...</span>
+            </div>
+            <div class="info-item">
+                <strong>Date:</strong> <span id="emailDate">Loading...</span>
+            </div>
+        </div>
+
+        <div>
+            <label for="customerUrl" style="font-weight: 600; margin-bottom: 5px; display: block;">
+                🏥 ACGI Customer Page URL (optional):
+            </label>
+            <input type="text" id="customerUrl" class="customer-input" 
+                   placeholder="Paste ACGI customer URL or leave blank">
+            <small style="color: #605e5c;">If blank, you'll need to navigate to the customer page manually</small>
+        </div>
+
+        <button id="uploadBtn" class="upload-btn" onclick="uploadToACGI()">
+            🚀 Upload to ACGI
+        </button>
+
+        <div id="status" class="status hidden"></div>
+    </div>
+
+    <script>
+        let emailData = {};
+
+        // Initialize the add-in
+        Office.onReady((info) => {
+            if (info.host === Office.HostType.Outlook) {
+                loadEmailData();
+            }
+        });
+
+        // Load current email data
+        function loadEmailData() {
+            const item = Office.context.mailbox.item;
