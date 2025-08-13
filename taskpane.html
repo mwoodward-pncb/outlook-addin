@@ -8,6 +8,9 @@
 
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         body {
@@ -136,8 +139,8 @@
             <small style="color: #605e5c;">If blank, you'll need to navigate to the customer page manually</small>
         </div>
 
-        <button id="uploadBtn" class="upload-btn" onclick="downloadEmailData()">
-            📄 Create Email File
+        <button id="uploadBtn" class="upload-btn" onclick="generatePDF()">
+            📄 Create PDF
         </button>
 
         <div id="status" class="status hidden"></div>
@@ -160,11 +163,12 @@
             // Get basic email properties
             emailData.subject = item.subject;
             emailData.sender = item.sender.displayName + " <" + item.sender.emailAddress + ">";
+            emailData.from = item.sender.displayName;
             emailData.dateTimeCreated = item.dateTimeCreated;
             
             // Display in UI
             document.getElementById('emailSubject').textContent = emailData.subject || 'No subject';
-            document.getElementById('emailSender').textContent = emailData.sender || 'Unknown sender';
+            document.getElementById('emailSender').textContent = emailData.from || 'Unknown sender';
             document.getElementById('emailDate').textContent = emailData.dateTimeCreated ? 
                 new Date(emailData.dateTimeCreated).toLocaleDateString() : 'Unknown date';
             
@@ -179,56 +183,105 @@
             });
         }
 
-        // Create simple text file with email data
-        function downloadEmailData() {
+        // Generate professional PDF
+        function generatePDF() {
             const uploadBtn = document.getElementById('uploadBtn');
             const customerUrl = document.getElementById('customerUrl').value.trim();
             
             // Disable button and show processing status
             uploadBtn.disabled = true;
-            uploadBtn.textContent = '🔄 Creating file...';
-            showStatus('Creating email file for manual upload...', 'processing');
+            uploadBtn.textContent = '🔄 Creating PDF...';
+            showStatus('Generating PDF file...', 'processing');
             
             try {
-                // Create simple text content
-                const emailContent = `
-ACGI EMAIL UPLOAD
-=================
-
-Subject: ${emailData.subject || 'No Subject'}
-From: ${emailData.sender || 'Unknown Sender'}
-Date: ${emailData.dateTimeCreated ? new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown Date'}
-Customer URL: ${customerUrl || 'Not provided'}
-
-EMAIL CONTENT:
---------------
-${emailData.bodyText || 'No content available'}
-
-Generated: ${new Date().toLocaleString()}
-`;
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
                 
-                // Create and download file
-                const blob = new Blob([emailContent], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
+                // Add red border (like your original)
+                doc.setDrawColor(255, 0, 0);
+                doc.setLineWidth(2);
+                doc.rect(10, 10, 190, 277);
                 
-                const downloadLink = document.createElement('a');
-                downloadLink.href = url;
-                downloadLink.download = 'acgi-email-content.txt';
-                downloadLink.style.display = 'none';
-                document.body.appendChild(downloadLink);
+                // Add title with star
+                doc.setFontSize(18);
+                doc.setTextColor(51, 122, 183);
+                doc.text('⭐ ' + (emailData.subject || 'Email Content'), 20, 30);
                 
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
-                URL.revokeObjectURL(url);
+                // Add separator line
+                doc.setDrawColor(51, 122, 183);
+                doc.setLineWidth(1);
+                doc.line(20, 35, 190, 35);
                 
-                showStatus('✅ Email file created! Save it to your Desktop and manually upload to ACGI.', 'success');
+                // Add email metadata box
+                doc.setFillColor(245, 245, 245);
+                doc.rect(20, 45, 170, 25, 'F');
+                
+                // Add blue left border to metadata
+                doc.setFillColor(51, 122, 183);
+                doc.rect(20, 45, 3, 25, 'F');
+                
+                // Email details
+                doc.setFontSize(11);
+                doc.setTextColor(0, 0, 0);
+                doc.text('From: ' + (emailData.from || 'Unknown'), 30, 55);
+                doc.text('Date: ' + (emailData.dateTimeCreated ? 
+                    new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown'), 30, 62);
+                
+                // Email Content header
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Email Content:', 20, 85);
+                
+                // Email body content
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                
+                if (emailData.bodyText) {
+                    const emailContent = emailData.bodyText.trim();
+                    const lines = doc.splitTextToSize(emailContent, 170);
+                    
+                    let yPosition = 95;
+                    for (let i = 0; i < lines.length; i++) {
+                        if (yPosition > 260) {
+                            doc.addPage();
+                            yPosition = 20;
+                            
+                            // Add border to new page
+                            doc.setDrawColor(255, 0, 0);
+                            doc.setLineWidth(2);
+                            doc.rect(10, 10, 190, 277);
+                        }
+                        
+                        doc.text(lines[i], 20, yPosition);
+                        yPosition += 5;
+                    }
+                }
+                
+                // Add footer
+                const footerY = Math.max(yPosition + 10, 270);
+                if (footerY > 270) {
+                    doc.addPage();
+                    doc.setDrawColor(255, 0, 0);
+                    doc.setLineWidth(2);
+                    doc.rect(10, 10, 190, 277);
+                }
+                
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                doc.text('Generated by ACGI Email Upload Tool - ' + new Date().toLocaleString(), 
+                    20, footerY > 270 ? 20 : footerY);
+                
+                // Save with specific filename
+                doc.save('email-for-acgi.pdf');
+                
+                showStatus('✅ PDF created! File saved as "email-for-acgi.pdf"', 'success');
                 
             } catch (error) {
                 console.error('Error:', error);
-                showStatus('❌ Error creating file: ' + error.message, 'error');
+                showStatus('❌ Error creating PDF: ' + error.message, 'error');
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.textContent = '📄 Create Email File';
+                uploadBtn.textContent = '📄 Create PDF';
             }
         }
 
