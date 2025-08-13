@@ -235,7 +235,7 @@
                 showStatus('Creating PDF from email content...', 'processing');
                 uploadBtn.textContent = '🔄 Creating PDF...';
                 
-                // Create simple, PDF-friendly content from scratch
+                // Get the PDF content element
                 const pdfElement = document.getElementById('emailContentForPDF');
                 
                 // Extract plain text from HTML email body
@@ -276,7 +276,6 @@ ${plainTextContent}
                 `;
                 
                 // Show the PDF content element temporarily FOR DEBUGGING
-                const pdfElement = document.getElementById('emailContentForPDF');
                 pdfElement.classList.remove('hidden');
                 pdfElement.style.position = 'static'; // Make it visible
                 pdfElement.style.left = 'auto';
