@@ -231,13 +231,12 @@
                     }
                 }
                 
-                // Debug: Log what we have
-                console.log('Email data:', {
-                    subject: emailData.subject,
-                    sender: emailData.sender,
-                    bodyLength: emailData.bodyHtml ? emailData.bodyHtml.length : 0,
-                    bodyPreview: emailData.bodyHtml ? emailData.bodyHtml.substring(0, 100) : 'No body'
-                });
+                // Debug: Show what we have in the status
+                const bodyLength = emailData.bodyHtml ? emailData.bodyHtml.length : 0;
+                const bodyPreview = emailData.bodyHtml ? emailData.bodyHtml.substring(0, 50) + '...' : 'No body';
+                
+                showStatus(`Debug: Subject="${emailData.subject}", Body length=${bodyLength}`, 'processing');
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Show debug for 2 seconds
                 
                 showStatus('Creating PDF from email content...', 'processing');
                 uploadBtn.textContent = '🔄 Creating PDF...';
@@ -248,11 +247,31 @@
                 document.getElementById('pdfDate').textContent = emailData.dateTimeCreated ? 
                     new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown Date';
                 
-                // Clean up email body HTML and add fallback
+                // Clean up email body HTML - remove images and problematic elements
                 let emailBodyContent = emailData.bodyHtml || 'No email content available';
-                if (emailBodyContent === 'No email content available') {
-                    emailBodyContent = '<p><strong>No email content available</strong></p><p>Subject: ' + (emailData.subject || 'No subject') + '</p>';
+                if (emailBodyContent !== 'No email content available') {
+                    // Create a temporary div to clean the HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = emailBodyContent;
+                    
+                    // Remove images, scripts, and other problematic elements
+                    const elementsToRemove = tempDiv.querySelectorAll('img, script, iframe, object, embed, video, audio, canvas');
+                    elementsToRemove.forEach(el => el.remove());
+                    
+                    // Get cleaned text content and preserve basic formatting
+                    emailBodyContent = tempDiv.innerHTML;
+                    
+                    // If still too complex, fall back to text-only
+                    if (emailBodyContent.length > 10000) {
+                        emailBodyContent = `<div style="font-family: Arial, sans-serif; line-height: 1.4;">
+                            <p><strong>Email Content:</strong></p>
+                            <div style="border: 1px solid #ccc; padding: 10px; background: #f9f9f9;">
+                                ${tempDiv.textContent || tempDiv.innerText || 'Could not extract text content'}
+                            </div>
+                        </div>`;
+                    }
                 }
+                
                 document.getElementById('pdfBody').innerHTML = emailBodyContent;
                 
                 // Show the PDF content element temporarily
