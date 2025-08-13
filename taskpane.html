@@ -210,20 +210,57 @@
             
             // Disable button and show processing status
             uploadBtn.disabled = true;
-            uploadBtn.textContent = '🔄 Creating PDF...';
-            showStatus('Creating PDF from email content...', 'processing');
+            uploadBtn.textContent = '🔄 Checking email data...';
+            showStatus('Checking if email content is loaded...', 'processing');
             
             try {
+                // Check if email body is loaded
+                if (!emailData.bodyHtml) {
+                    showStatus('Email body not loaded yet. Waiting...', 'processing');
+                    
+                    // Wait for email body to load
+                    const item = Office.context.mailbox.item;
+                    const bodyResult = await new Promise((resolve) => {
+                        item.body.getAsync(Office.CoercionType.Html, resolve);
+                    });
+                    
+                    if (bodyResult.status === Office.AsyncResultStatus.Succeeded) {
+                        emailData.bodyHtml = bodyResult.value;
+                    } else {
+                        throw new Error('Failed to load email body');
+                    }
+                }
+                
+                // Debug: Log what we have
+                console.log('Email data:', {
+                    subject: emailData.subject,
+                    sender: emailData.sender,
+                    bodyLength: emailData.bodyHtml ? emailData.bodyHtml.length : 0,
+                    bodyPreview: emailData.bodyHtml ? emailData.bodyHtml.substring(0, 100) : 'No body'
+                });
+                
+                showStatus('Creating PDF from email content...', 'processing');
+                uploadBtn.textContent = '🔄 Creating PDF...';
+                
                 // Prepare PDF content
                 document.getElementById('pdfSubject').textContent = emailData.subject || 'No Subject';
                 document.getElementById('pdfSender').textContent = emailData.sender || 'Unknown Sender';
                 document.getElementById('pdfDate').textContent = emailData.dateTimeCreated ? 
                     new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown Date';
-                document.getElementById('pdfBody').innerHTML = emailData.bodyHtml || 'No content';
+                
+                // Clean up email body HTML and add fallback
+                let emailBodyContent = emailData.bodyHtml || 'No email content available';
+                if (emailBodyContent === 'No email content available') {
+                    emailBodyContent = '<p><strong>No email content available</strong></p><p>Subject: ' + (emailData.subject || 'No subject') + '</p>';
+                }
+                document.getElementById('pdfBody').innerHTML = emailBodyContent;
                 
                 // Show the PDF content element temporarily
                 const pdfElement = document.getElementById('emailContentForPDF');
                 pdfElement.classList.remove('hidden');
+                
+                // Wait a moment for content to render
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 showStatus('Generating PDF file...', 'processing');
                 
@@ -241,7 +278,7 @@
                 // Hide the PDF content element again
                 pdfElement.classList.add('hidden');
                 
-                showStatus('✅ PDF created! Email saved as "email-for-acgi.pdf". Now run your Power Automate flow to upload to ACGI.', 'success');
+                showStatus('✅ PDF created! Email saved as "email-for-acgi.pdf". Check your Downloads folder, then run your Power Automate flow.', 'success');
                 
             } catch (error) {
                 console.error('PDF generation error:', error);
