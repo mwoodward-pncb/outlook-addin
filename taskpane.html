@@ -156,3 +156,91 @@
         // Load current email data
         function loadEmailData() {
             const item = Office.context.mailbox.item;
+            
+            // Get basic email properties
+            emailData.subject = item.subject;
+            emailData.sender = item.sender.displayName + " <" + item.sender.emailAddress + ">";
+            emailData.dateTimeCreated = item.dateTimeCreated;
+            
+            // Display in UI
+            document.getElementById('emailSubject').textContent = emailData.subject || 'No subject';
+            document.getElementById('emailSender').textContent = emailData.sender || 'Unknown sender';
+            document.getElementById('emailDate').textContent = emailData.dateTimeCreated ? 
+                new Date(emailData.dateTimeCreated).toLocaleDateString() : 'Unknown date';
+            
+            // Get email body
+            item.body.getAsync(Office.CoercionType.Html, (result) => {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    emailData.bodyHtml = result.value;
+                    console.log('Email body loaded successfully');
+                } else {
+                    console.error('Failed to load email body:', result.error);
+                }
+            });
+        }
+
+        // Upload email to ACGI via Power Automate
+        async function uploadToACGI() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            const statusDiv = document.getElementById('status');
+            const customerUrl = document.getElementById('customerUrl').value.trim();
+            
+            // Disable button and show processing status
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '🔄 Processing...';
+            showStatus('Processing email upload to ACGI...', 'processing');
+            
+            try {
+                // Prepare data for Power Automate
+                const payload = {
+                    subject: emailData.subject,
+                    sender: emailData.sender,
+                    date: emailData.dateTimeCreated,
+                    bodyHtml: emailData.bodyHtml,
+                    customerUrl: customerUrl || null
+                };
+                
+                // TODO: Replace with your Power Automate HTTP endpoint
+                const powerAutomateUrl = 'http://localhost:8080/webhook'; // Placeholder
+                
+                const response = await fetch(powerAutomateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    showStatus('✅ Email uploaded to ACGI successfully!', 'success');
+                } else {
+                    throw new Error('Failed to upload to ACGI');
+                }
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus('❌ Upload failed: ' + error.message, 'error');
+            } finally {
+                // Re-enable button
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '🚀 Upload to ACGI';
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.classList.remove('hidden');
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>
