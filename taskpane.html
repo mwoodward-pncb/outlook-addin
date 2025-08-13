@@ -8,6 +8,9 @@
 
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         body {
@@ -106,6 +109,17 @@
             border-radius: 4px;
             margin-bottom: 15px;
         }
+
+        /* Hidden email content for PDF generation */
+        #emailContentForPDF {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            background: white;
+            padding: 20px;
+            width: 600px;
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 
@@ -141,6 +155,15 @@
         </button>
 
         <div id="status" class="status hidden"></div>
+    </div>
+
+    <!-- Hidden email content for PDF generation -->
+    <div id="emailContentForPDF" class="hidden">
+        <h1 id="pdfSubject"></h1>
+        <p><strong>From:</strong> <span id="pdfSender"></span></p>
+        <p><strong>Date:</strong> <span id="pdfDate"></span></p>
+        <hr>
+        <div id="pdfBody"></div>
     </div>
 
     <script>
@@ -179,7 +202,7 @@
             });
         }
 
-        // Upload email to ACGI via Power Automate
+        // Upload email to ACGI with PDF generation
         async function uploadToACGI() {
             const uploadBtn = document.getElementById('uploadBtn');
             const statusDiv = document.getElementById('status');
@@ -187,39 +210,42 @@
             
             // Disable button and show processing status
             uploadBtn.disabled = true;
-            uploadBtn.textContent = '🔄 Processing...';
-            showStatus('Processing email upload to ACGI...', 'processing');
+            uploadBtn.textContent = '🔄 Creating PDF...';
+            showStatus('Creating PDF from email content...', 'processing');
             
             try {
-                // Prepare data for Power Automate
-                const payload = {
-                    subject: emailData.subject,
-                    sender: emailData.sender,
-                    date: emailData.dateTimeCreated,
-                    bodyHtml: emailData.bodyHtml,
-                    customerUrl: customerUrl || null
+                // Prepare PDF content
+                document.getElementById('pdfSubject').textContent = emailData.subject || 'No Subject';
+                document.getElementById('pdfSender').textContent = emailData.sender || 'Unknown Sender';
+                document.getElementById('pdfDate').textContent = emailData.dateTimeCreated ? 
+                    new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown Date';
+                document.getElementById('pdfBody').innerHTML = emailData.bodyHtml || 'No content';
+                
+                // Show the PDF content element temporarily
+                const pdfElement = document.getElementById('emailContentForPDF');
+                pdfElement.classList.remove('hidden');
+                
+                showStatus('Generating PDF file...', 'processing');
+                
+                // Generate PDF
+                const opt = {
+                    margin: 0.5,
+                    filename: 'email-for-acgi.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
                 };
                 
-                // TODO: Replace with your Power Automate HTTP endpoint
-                const powerAutomateUrl = 'http://localhost:8080/webhook'; // Placeholder
+                await html2pdf().set(opt).from(pdfElement).save();
                 
-                const response = await fetch(powerAutomateUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                });
+                // Hide the PDF content element again
+                pdfElement.classList.add('hidden');
                 
-                if (response.ok) {
-                    showStatus('✅ Email uploaded to ACGI successfully!', 'success');
-                } else {
-                    throw new Error('Failed to upload to ACGI');
-                }
+                showStatus('✅ PDF created! Email saved as "email-for-acgi.pdf". Now run your Power Automate flow to upload to ACGI.', 'success');
                 
             } catch (error) {
-                console.error('Upload error:', error);
-                showStatus('❌ Upload failed: ' + error.message, 'error');
+                console.error('PDF generation error:', error);
+                showStatus('❌ PDF generation failed: ' + error.message, 'error');
             } finally {
                 // Re-enable button
                 uploadBtn.disabled = false;
@@ -234,11 +260,11 @@
             statusDiv.className = 'status ' + type;
             statusDiv.classList.remove('hidden');
             
-            // Auto-hide success messages after 5 seconds
+            // Auto-hide success messages after 8 seconds
             if (type === 'success') {
                 setTimeout(() => {
                     statusDiv.classList.add('hidden');
-                }, 5000);
+                }, 8000);
             }
         }
     </script>
