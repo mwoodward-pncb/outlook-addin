@@ -7,18 +7,18 @@
   xsi:type="MailApp">
 
   <Id>12345678-1234-1234-1234-123456789012</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.0.7.0</Version>
   <ProviderName>PNCB</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="ACGI Email Upload"/>
   <Description DefaultValue="Upload current email to ACGI customer record"/>
 
-  <IconUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-32.png"/>
+  <IconUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-128.png"/>
   <SupportUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/"/>
 
   <AppDomains>
-    <AppDomain>https://mwoodward-pncb.github.io</AppDomain>
+    <AppDomain>mwoodward-pncb.github.io</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -27,7 +27,7 @@
 
   <Requirements>
     <Sets>
-      <Set Name="Mailbox" MinVersion="1.1"/>
+      <Set Name="Mailbox" MinVersion="1.3"/>
     </Sets>
   </Requirements>
 
@@ -41,6 +41,10 @@
   </FormSettings>
 
   <Permissions>ReadWriteItem</Permissions>
+
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
+  </Rule>
 
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Requirements>
@@ -70,7 +74,6 @@
                     <bt:Image size="80" resid="Icon.80x80"/>
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>ButtonId1</TaskpaneId>
                     <SourceLocation resid="Taskpane.Url"/>
                   </Action>
                 </Control>
