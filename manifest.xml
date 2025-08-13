@@ -7,7 +7,7 @@
   xsi:type="MailApp">
 
   <Id>12345678-1234-1234-1234-123456789012</Id>
-  <Version>1.0.7.0</Version>
+  <Version>1.0.8.0</Version>
   <ProviderName>PNCB</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="ACGI Email Upload"/>
@@ -35,8 +35,15 @@
     <Form xsi:type="ItemRead">
       <DesktopSettings>
         <SourceLocation DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane.html"/>
-        <RequestedHeight>250</RequestedHeight>
+        <RequestedHeight>400</RequestedHeight>
       </DesktopSettings>
+      <TabletSettings>
+        <SourceLocation DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane.html"/>
+        <RequestedHeight>400</RequestedHeight>
+      </TabletSettings>
+      <PhoneSettings>
+        <SourceLocation DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane.html"/>
+      </PhoneSettings>
     </Form>
   </FormSettings>
 
@@ -81,6 +88,8 @@
             </OfficeTab>
           </ExtensionPoint>
         </DesktopFormFactor>
+        
+
       </Host>
     </Hosts>
 
