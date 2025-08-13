@@ -275,12 +275,20 @@ ${plainTextContent}
                     </div>
                 `;
                 
-                // Show the PDF content element temporarily
+                // Show the PDF content element temporarily FOR DEBUGGING
                 const pdfElement = document.getElementById('emailContentForPDF');
                 pdfElement.classList.remove('hidden');
+                pdfElement.style.position = 'static'; // Make it visible
+                pdfElement.style.left = 'auto';
+                pdfElement.style.top = 'auto';
+                pdfElement.style.border = '2px solid red'; // Make it obvious
+                pdfElement.style.background = 'white';
+                pdfElement.style.padding = '10px';
                 
-                // Wait a moment for content to render
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                showStatus('DEBUG: PDF content now visible above. Check if content appears, then scroll down and click Upload again to generate PDF.', 'processing');
+                
+                // Wait for user to see the content
+                await new Promise(resolve => setTimeout(resolve, 5000));
                 
                 showStatus('Generating PDF file...', 'processing');
                 
