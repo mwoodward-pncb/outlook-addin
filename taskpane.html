@@ -3,132 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ACGI Add-in • Diagnostics</title>
-  <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <title>ACGI Blank Pane</title>
   <style>
-    body { font-family: Segoe UI, Tahoma, Arial, sans-serif; margin: 0; padding: 12px; background: #0b0c0d; color: #e8e8e8; }
-    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .btn { background: #2b88d8; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-    .btn.secondary { background: #6b6a69; }
-    .pill { display:inline-block; background:#1e1f20; border:1px solid #353637; padding:2px 6px; border-radius:12px; margin:2px; font-size:12px; }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-    .card { background: #111213; border: 1px solid #2b2c2d; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-    .mono { font-family: Consolas, monospace; font-size: 12px; }
-    .ok { color: #92c353; }
-    .warn { color: #f2cc0c; }
-    .err { color: #f1707b; }
-    #log { background: #0e0f10; border: 1px solid #2b2c2d; height: 220px; overflow:auto; padding:8px; border-radius:6px; }
+    body { font-family: Segoe UI, Arial, sans-serif; margin:0; padding:18px; }
+    .box { border:1px solid #ddd; border-radius:8px; padding:14px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="row" style="justify-content:space-between;">
-      <div>
-        <strong>Diagnostics</strong> — Outlook Web add-in pipeline
-      </div>
-      <div>
-        <button id="btnClear" class="btn secondary">Clear</button>
-        <button id="btnReload" class="btn">Reload</button>
-      </div>
-    </div>
-    <div style="margin-top:6px" class="mono">Time: <span id="now">—</span></div>
+  <div class="box">
+    <h3>ACGI Blank Pane</h3>
+    <p>This page intentionally loads no scripts. If you can see this, the taskpane iframe is healthy.</p>
   </div>
-
-  <div class="card">
-    <div class="grid">
-      <div>Office.js: <span id="officeReady" class="pill">pending</span></div>
-      <div>Host: <span id="host" class="pill">—</span></div>
-      <div>Mailbox set 1.3 supported: <span id="mb13" class="pill">—</span></div>
-      <div>Item Type: <span id="itemType" class="pill">—</span></div>
-      <div>Subject: <span id="subj" class="pill">—</span></div>
-      <div>Sender: <span id="sender" class="pill">—</span></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="row" style="gap:6px; flex-wrap:wrap;">
-      <button id="btnPing" class="btn">Ping parent</button>
-      <button id="btnBody" class="btn">Load body text</button>
-      <button id="btnAtts" class="btn">List attachments</button>
-    </div>
-  </div>
-
-  <div id="log" class="mono"></div>
-
-<script>
-  const logEl = document.getElementById('log');
-  function log() {
-    const msg = Array.from(arguments).map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' ');
-    const ts = new Date().toLocaleTimeString();
-    logEl.textContent += `[${ts}] ${msg}\n`;
-    logEl.scrollTop = logEl.scrollHeight;
-    try { console.log('[diag]', msg); } catch(_) {}
-  }
-
-  function set(id, text, cls) {
-    const el = document.getElementById(id);
-    el.textContent = text;
-    if (cls) el.className = 'pill ' + cls;
-  }
-
-  document.getElementById('btnClear').onclick = () => { logEl.textContent=''; };
-  document.getElementById('btnReload').onclick = () => { location.reload(); };
-  document.getElementById('btnPing').onclick = () => {
-    try {
-      parent.postMessage({ kind:'acgi-diag-ping', time: Date.now() }, '*');
-      log('Posted message to parent window.');
-    } catch(e) { log('postMessage failed:', e.message); }
-  };
-  document.getElementById('now').textContent = new Date().toLocaleString();
-
-  window.addEventListener('message', (e) => {
-    log('Message from parent:', e.origin, e.data && e.data.kind ? e.data.kind : '(no kind)');
-  });
-
-  let heartbeat = 0;
-  setInterval(() => {
-    heartbeat++;
-    if (heartbeat % 10 === 0) document.getElementById('now').textContent = new Date().toLocaleString();
-  }, 1000);
-
-  Office.onReady((info) => {
-    set('officeReady', 'ready', 'ok');
-    set('host', info && info.host ? info.host : '(unknown)');
-    const mb13 = Office.context && Office.context.requirements && Office.context.requirements.isSetSupported('Mailbox','1.3');
-    set('mb13', String(!!mb13), mb13 ? 'ok' : 'warn');
-    log('Office.onReady fired:', info);
-
-    try {
-      const item = Office.context.mailbox && Office.context.mailbox.item;
-      set('itemType', item && item.itemType ? item.itemType : '(none)');
-      set('subj', item && item.subject ? item.subject : '(no subject)');
-      const sender = item && item.sender ? (item.sender.displayName || item.sender.emailAddress || '(unknown)') : '(unknown)';
-      set('sender', sender);
-    } catch(e) {
-      log('Item access error:', e.message);
-    }
-  });
-
-  document.getElementById('btnBody').onclick = () => {
-    try {
-      const item = Office.context.mailbox.item;
-      item.body.getAsync(Office.CoercionType.Text, (res) => {
-        if (res.status === Office.AsyncResultStatus.Succeeded) {
-          log('Body length:', (res.value || '').length);
-        } else {
-          log('Body getAsync error:', res.error && res.error.message ? res.error.message : res.error);
-        }
-      });
-    } catch(e){ log('Body exception:', e.message); }
-  };
-
-  document.getElementById('btnAtts').onclick = () => {
-    try {
-      const atts = Office.context.mailbox.item.attachments || [];
-      log('Attachments:', atts.map(a => a.name).join(', ') || '(none)');
-    } catch(e){ log('Attachments exception:', e.message); }
-  };
-</script>
 </body>
 </html>
