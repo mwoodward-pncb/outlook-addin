@@ -94,7 +94,7 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="Commands.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane-test.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="ACGI Upload"/>
@@ -106,4 +106,5 @@
     </Resources>
   </VersionOverrides>
 </OfficeApp>
+
 
