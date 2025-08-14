@@ -8,9 +8,6 @@
 
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    
-    <!-- PDF Generation Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         body {
@@ -109,17 +106,6 @@
             border-radius: 4px;
             margin-bottom: 15px;
         }
-
-        /* Hidden email content for PDF generation */
-        #emailContentForPDF {
-            position: absolute;
-            left: -9999px;
-            top: -9999px;
-            background: white;
-            padding: 20px;
-            width: 600px;
-            font-family: Arial, sans-serif;
-        }
     </style>
 </head>
 
@@ -157,15 +143,6 @@
         <div id="status" class="status hidden"></div>
     </div>
 
-    <!-- Hidden email content for PDF generation -->
-    <div id="emailContentForPDF" class="hidden">
-        <h1 id="pdfSubject"></h1>
-        <p><strong>From:</strong> <span id="pdfSender"></span></p>
-        <p><strong>Date:</strong> <span id="pdfDate"></span></p>
-        <hr>
-        <div id="pdfBody"></div>
-    </div>
-
     <script>
         let emailData = {};
 
@@ -179,94 +156,3 @@
         // Load current email data
         function loadEmailData() {
             const item = Office.context.mailbox.item;
-            
-            // Get basic email properties
-            emailData.subject = item.subject;
-            emailData.sender = item.sender.displayName + " <" + item.sender.emailAddress + ">";
-            emailData.dateTimeCreated = item.dateTimeCreated;
-            
-            // Display in UI
-            document.getElementById('emailSubject').textContent = emailData.subject || 'No subject';
-            document.getElementById('emailSender').textContent = emailData.sender || 'Unknown sender';
-            document.getElementById('emailDate').textContent = emailData.dateTimeCreated ? 
-                new Date(emailData.dateTimeCreated).toLocaleDateString() : 'Unknown date';
-            
-            // Get email body
-            item.body.getAsync(Office.CoercionType.Html, (result) => {
-                if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    emailData.bodyHtml = result.value;
-                    console.log('Email body loaded successfully');
-                } else {
-                    console.error('Failed to load email body:', result.error);
-                }
-            });
-        }
-
-        // Upload email to ACGI with PDF generation
-        async function uploadToACGI() {
-            const uploadBtn = document.getElementById('uploadBtn');
-            const statusDiv = document.getElementById('status');
-            const customerUrl = document.getElementById('customerUrl').value.trim();
-            
-            // Disable button and show processing status
-            uploadBtn.disabled = true;
-            uploadBtn.textContent = '🔄 Creating PDF...';
-            showStatus('Creating PDF from email content...', 'processing');
-            
-            try {
-                // Prepare PDF content
-                document.getElementById('pdfSubject').textContent = emailData.subject || 'No Subject';
-                document.getElementById('pdfSender').textContent = emailData.sender || 'Unknown Sender';
-                document.getElementById('pdfDate').textContent = emailData.dateTimeCreated ? 
-                    new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown Date';
-                document.getElementById('pdfBody').innerHTML = emailData.bodyHtml || 'No content';
-                
-                // Show the PDF content element temporarily
-                const pdfElement = document.getElementById('emailContentForPDF');
-                pdfElement.classList.remove('hidden');
-                
-                showStatus('Generating PDF file...', 'processing');
-                
-                // Generate PDF
-                const opt = {
-                    margin: 0.5,
-                    filename: 'email-for-acgi.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-                };
-                
-                await html2pdf().set(opt).from(pdfElement).save();
-                
-                // Hide the PDF content element again
-                pdfElement.classList.add('hidden');
-                
-                showStatus('✅ PDF created! Email saved as "email-for-acgi.pdf". Now run your Power Automate flow to upload to ACGI.', 'success');
-                
-            } catch (error) {
-                console.error('PDF generation error:', error);
-                showStatus('❌ PDF generation failed: ' + error.message, 'error');
-            } finally {
-                // Re-enable button
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = '🚀 Upload to ACGI';
-            }
-        }
-
-        // Show status message
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.textContent = message;
-            statusDiv.className = 'status ' + type;
-            statusDiv.classList.remove('hidden');
-            
-            // Auto-hide success messages after 8 seconds
-            if (type === 'success') {
-                setTimeout(() => {
-                    statusDiv.classList.add('hidden');
-                }, 8000);
-            }
-        }
-    </script>
-</body>
-</html>
