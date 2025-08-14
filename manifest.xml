@@ -88,7 +88,7 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="Commands.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/commands.html?v=1007"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane-blank.html?v=1007"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane-blanklog.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="ACGI Blank"/>
@@ -100,3 +100,4 @@
     </Resources>
   </VersionOverrides>
 </OfficeApp>
+
