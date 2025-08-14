@@ -155,7 +155,20 @@
             
             if (info.host === Office.HostType.Outlook) {
                 console.log('Running in Outlook - loading email data');
-                loadEmailData();
+                
+                // Add delay to ensure email context is ready
+                setTimeout(() => {
+                    loadEmailData();
+                }, 500);
+                
+                // Also try to refresh when window gets focus (panel switching)
+                window.addEventListener('focus', () => {
+                    console.log('Panel gained focus - refreshing email data');
+                    setTimeout(() => {
+                        loadEmailData();
+                    }, 200);
+                });
+                
             } else {
                 console.log('Not running in Outlook:', info.host);
                 showStatus('⚠️ Please run this add-in in Outlook', 'error');
