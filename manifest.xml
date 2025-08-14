@@ -6,12 +6,12 @@
   xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
   xsi:type="MailApp">
 
-  <Id>cccccccc-4444-5555-6666-dddddddd0006</Id>
-  <Version>1.0.0.6</Version>
+  <Id>eeeeeeee-7777-8888-9999-aaaaaaaa0007</Id>
+  <Version>1.0.0.7</Version>
   <ProviderName>PNCB</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="ACGI Diagnostics"/>
-  <Description DefaultValue="Diagnostic taskpane to isolate OWA add-in issues"/>
+  <DisplayName DefaultValue="ACGI Blank Test"/>
+  <Description DefaultValue="Loads a blank HTML page without Office.js to isolate platform errors"/>
 
   <IconUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-128.png"/>
@@ -34,8 +34,8 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane-diag.html?v=1006"/>
-        <RequestedHeight>450</RequestedHeight>
+        <SourceLocation DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane-blank.html?v=1007"/>
+        <RequestedHeight>360</RequestedHeight>
       </DesktopSettings>
     </Form>
   </FormSettings>
@@ -58,9 +58,9 @@
           <FunctionFile resid="Commands.Url"/>
           <ExtensionPoint xsi:type="MessageReadCommandSurface">
             <OfficeTab id="TabDefault">
-              <Group id="acgiDiagGroup">
+              <Group id="acgiBlankGroup">
                 <Label resid="GroupLabel"/>
-                <Control xsi:type="Button" id="openDiagPaneBtn">
+                <Control xsi:type="Button" id="openBlankPaneBtn">
                   <Label resid="TaskpaneButton.Label"/>
                   <Supertip>
                     <Title resid="TaskpaneButton.Label"/>
@@ -87,15 +87,15 @@
         <bt:Image id="Icon.128x128" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/icon-128.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/commands.html?v=1006"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane-diag.html?v=1006"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/commands.html?v=1007"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://mwoodward-pncb.github.io/outlook-addin/taskpane-blank.html?v=1007"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GroupLabel" DefaultValue="ACGI Diag"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Open Diagnostics"/>
+        <bt:String id="GroupLabel" DefaultValue="ACGI Blank"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Open Blank Pane"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open diagnostic taskpane"/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open blank taskpane to isolate platform errors"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
