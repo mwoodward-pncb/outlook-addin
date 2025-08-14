@@ -6,25 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ACGI Email Upload</title>
 
-    <!-- CRITICAL CSP FIX: Add Content Security Policy headers -->
+    <!-- FIXED CSP: Allow Office.js required domains -->
     <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self';
+        default-src 'self' https:;
         script-src 'self' 
             https://appsforoffice.microsoft.com 
             https://ajax.aspnetcdn.com 
             *.res.office.com 
+            *.res.office365.com
+            *.cdn.office.net
             'unsafe-inline';
-        connect-src 'self' https:;
+        connect-src 'self' https: wss:;
+        frame-src 'self' https: 
+            *.firstpartyapps.oaspapps.com 
+            *.office.com 
+            *.office365.com 
+            *.sharepoint.com;
         img-src 'self' data: https:;
         style-src 'self' 'unsafe-inline' https:;
         font-src 'self' data: https:;
+        child-src 'self' https: 
+            *.firstpartyapps.oaspapps.com;
     ">
 
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     
-    <!-- SELF-HOSTED jsPDF - Download from https://github.com/parallax/jsPDF/releases -->
-    <!-- Place jspdf.umd.min.js in your GitHub Pages repository -->
+    <!-- Self-hosted jsPDF -->
     <script src="./jspdf.umd.min.js"></script>
 
     <style>
@@ -164,44 +172,64 @@
     <script>
         let emailData = {};
 
-        // Initialize the add-in
+        // Initialize the add-in with better error handling
         Office.onReady((info) => {
+            console.log('Office.js initialized:', info);
+            
             if (info.host === Office.HostType.Outlook) {
+                console.log('Running in Outlook - loading email data');
                 loadEmailData();
+            } else {
+                console.log('Not running in Outlook:', info.host);
+                showStatus('⚠️ Please run this add-in in Outlook', 'error');
             }
+        }).catch((error) => {
+            console.error('Office.js initialization failed:', error);
+            showStatus('❌ Office.js initialization failed: ' + error.message, 'error');
         });
 
         // Load current email data
         function loadEmailData() {
-            const item = Office.context.mailbox.item;
-            
-            // Get basic email properties
-            emailData.subject = item.subject;
-            emailData.sender = item.sender.displayName + " <" + item.sender.emailAddress + ">";
-            emailData.from = item.sender.displayName;
-            emailData.dateTimeCreated = item.dateTimeCreated;
-            
-            // Display in UI
-            document.getElementById('emailSubject').textContent = emailData.subject || 'No subject';
-            document.getElementById('emailSender').textContent = emailData.from || 'Unknown sender';
-            document.getElementById('emailDate').textContent = emailData.dateTimeCreated ? 
-                new Date(emailData.dateTimeCreated).toLocaleDateString() : 'Unknown date';
-            
-            // Get email body
-            item.body.getAsync(Office.CoercionType.Text, (result) => {
-                if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    emailData.bodyText = result.value;
-                    console.log('Email body loaded successfully');
-                } else {
-                    console.error('Failed to load email body:', result.error);
-                }
-            });
+            try {
+                const item = Office.context.mailbox.item;
+                
+                // Get basic email properties
+                emailData.subject = item.subject || 'No subject';
+                emailData.sender = item.sender ? (item.sender.displayName + " <" + item.sender.emailAddress + ">") : 'Unknown sender';
+                emailData.from = item.sender ? item.sender.displayName : 'Unknown sender';
+                emailData.dateTimeCreated = item.dateTimeCreated;
+                
+                // Display in UI
+                document.getElementById('emailSubject').textContent = emailData.subject;
+                document.getElementById('emailSender').textContent = emailData.from;
+                document.getElementById('emailDate').textContent = emailData.dateTimeCreated ? 
+                    new Date(emailData.dateTimeCreated).toLocaleDateString() : 'Unknown date';
+                
+                // Get email body
+                item.body.getAsync(Office.CoercionType.Text, (result) => {
+                    if (result.status === Office.AsyncResultStatus.Succeeded) {
+                        emailData.bodyText = result.value;
+                        console.log('Email body loaded successfully');
+                    } else {
+                        console.error('Failed to load email body:', result.error);
+                        emailData.bodyText = 'Failed to load email content';
+                    }
+                });
+                
+                console.log('Email data loaded:', emailData);
+                
+            } catch (error) {
+                console.error('Error loading email data:', error);
+                showStatus('❌ Error loading email data: ' + error.message, 'error');
+            }
         }
 
         // Generate professional PDF with enhanced error handling
         function generatePDF() {
             const uploadBtn = document.getElementById('uploadBtn');
             const customerUrl = document.getElementById('customerUrl').value.trim();
+            
+            console.log('Starting PDF generation...');
             
             // Disable button and show processing status
             uploadBtn.disabled = true;
@@ -210,11 +238,16 @@
             
             try {
                 // Check if jsPDF is available
+                console.log('Checking jsPDF availability...');
+                console.log('window.jspdf:', typeof window.jspdf);
+                
                 if (typeof window.jspdf === 'undefined') {
-                    throw new Error('jsPDF library not loaded. Please ensure jspdf.umd.min.js is in your repository.');
+                    throw new Error('jsPDF library not loaded. Please ensure jspdf.umd.min.js is accessible.');
                 }
 
                 const { jsPDF } = window.jspdf;
+                console.log('jsPDF loaded successfully');
+                
                 const doc = new jsPDF();
                 
                 // Add red border (like your original)
@@ -225,7 +258,7 @@
                 // Add title with star
                 doc.setFontSize(18);
                 doc.setTextColor(51, 122, 183);
-                doc.text('⭐ ' + (emailData.subject || 'Email Content'), 20, 30);
+                doc.text('⭐ ' + emailData.subject, 20, 30);
                 
                 // Add separator line
                 doc.setDrawColor(51, 122, 183);
@@ -243,7 +276,7 @@
                 // Email details
                 doc.setFontSize(11);
                 doc.setTextColor(0, 0, 0);
-                doc.text('From: ' + (emailData.from || 'Unknown'), 30, 55);
+                doc.text('From: ' + emailData.from, 30, 55);
                 doc.text('Date: ' + (emailData.dateTimeCreated ? 
                     new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown'), 30, 62);
                 
@@ -297,6 +330,7 @@
                     20, footerY > 270 ? 20 : footerY);
                 
                 // Save with specific filename that matches your Power Automate flow
+                console.log('Saving PDF...');
                 doc.save('acgi-email-content.pdf');
                 
                 showStatus('✅ PDF created! File saved as "acgi-email-content.pdf"', 'success');
@@ -309,7 +343,7 @@
                 }
                 
             } catch (error) {
-                console.error('Error:', error);
+                console.error('PDF generation error:', error);
                 showStatus('❌ Error creating PDF: ' + error.message, 'error');
             } finally {
                 uploadBtn.disabled = false;
