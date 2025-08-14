@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <script>
+        console.log("HTML loaded, before Office.js");
+    </script>
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"
+        onload="console.log('Office.js loaded')" 
+        onerror="console.error('Office.js failed to load')">
+    </script>
+</head>
+<body>
+    <h3>Blank Pane Test</h3>
+    <pre id="log"></pre>
+    <script>
+        const log = msg => {
+            console.log(msg);
+            document.getElementById("log").textContent += msg + "\n";
+        };
+
+        try {
+            Office.onReady(info => {
+                log("Office.onReady fired");
+                log("Host: " + info.host);
+                log("Platform: " + info.platform);
+            });
+        } catch (e) {
+            log("Error in Office.onReady: " + e.message);
+        }
+    </script>
+</body>
+</html>
