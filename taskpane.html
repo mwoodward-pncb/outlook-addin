@@ -6,29 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ACGI Email Upload</title>
 
-    <!-- FIXED CSP: Allow Office.js required domains -->
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' https:;
-        script-src 'self' 
-            https://appsforoffice.microsoft.com 
-            https://ajax.aspnetcdn.com 
-            *.res.office.com 
-            *.res.office365.com
-            *.cdn.office.net
-            'unsafe-inline';
-        connect-src 'self' https: wss:;
-        frame-src 'self' https: 
-            *.firstpartyapps.oaspapps.com 
-            *.office.com 
-            *.office365.com 
-            *.sharepoint.com;
-        img-src 'self' data: https:;
-        style-src 'self' 'unsafe-inline' https:;
-        font-src 'self' data: https:;
-        child-src 'self' https: 
-            *.firstpartyapps.oaspapps.com;
-    ">
-
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     
@@ -172,7 +149,7 @@
     <script>
         let emailData = {};
 
-        // Initialize the add-in with better error handling
+        // Initialize the add-in
         Office.onReady((info) => {
             console.log('Office.js initialized:', info);
             
@@ -183,9 +160,6 @@
                 console.log('Not running in Outlook:', info.host);
                 showStatus('⚠️ Please run this add-in in Outlook', 'error');
             }
-        }).catch((error) => {
-            console.error('Office.js initialization failed:', error);
-            showStatus('❌ Office.js initialization failed: ' + error.message, 'error');
         });
 
         // Load current email data
@@ -224,7 +198,7 @@
             }
         }
 
-        // Generate professional PDF with enhanced error handling
+        // Generate professional PDF
         function generatePDF() {
             const uploadBtn = document.getElementById('uploadBtn');
             const customerUrl = document.getElementById('customerUrl').value.trim();
@@ -250,7 +224,7 @@
                 
                 const doc = new jsPDF();
                 
-                // Add red border (like your original)
+                // Add red border
                 doc.setDrawColor(255, 0, 0);
                 doc.setLineWidth(2);
                 doc.rect(10, 10, 190, 277);
