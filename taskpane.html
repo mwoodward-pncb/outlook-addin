@@ -9,8 +9,8 @@
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     
-    <!-- Self-hosted jsPDF -->
-    <script src="./jspdf.umd.min.js"></script>
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         body {
@@ -109,6 +109,17 @@
             border-radius: 4px;
             margin-bottom: 15px;
         }
+
+        /* Hidden email content for PDF generation */
+        #emailContentForPDF {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            background: white;
+            padding: 20px;
+            width: 600px;
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 
@@ -139,237 +150,177 @@
             <small style="color: #605e5c;">If blank, you'll need to navigate to the customer page manually</small>
         </div>
 
-        <button id="uploadBtn" class="upload-btn" onclick="generatePDF()">
-            📄 Create PDF
+        <button id="uploadBtn" class="upload-btn" onclick="uploadToACGI()">
+            🚀 Upload to ACGI
         </button>
 
         <div id="status" class="status hidden"></div>
     </div>
+
+    <!-- Hidden email content for PDF generation -->
+    <div id="emailContentForPDF" class="hidden"></div>
 
     <script>
         let emailData = {};
 
         // Initialize the add-in
         Office.onReady((info) => {
-            console.log('Office.js initialized:', info);
-            
             if (info.host === Office.HostType.Outlook) {
-                console.log('Running in Outlook - loading email data');
-                
-                // Add delay to ensure email context is ready
-                setTimeout(() => {
-                    loadEmailData();
-                }, 500);
-                
-                // Also try to refresh when window gets focus (panel switching)
-                window.addEventListener('focus', () => {
-                    console.log('Panel gained focus - refreshing email data');
-                    setTimeout(() => {
-                        loadEmailData();
-                    }, 200);
-                });
-                
-            } else {
-                console.log('Not running in Outlook:', info.host);
-                showStatus('⚠️ Please run this add-in in Outlook', 'error');
+                loadEmailData();
             }
         });
 
         // Load current email data
         function loadEmailData() {
-            try {
-                console.log('Loading email data...');
-                console.log('Office.context:', Office.context);
-                console.log('Office.context.mailbox:', Office.context.mailbox);
-                
-                if (!Office.context.mailbox) {
-                    throw new Error('Office.context.mailbox not available');
-                }
-                
-                const item = Office.context.mailbox.item;
-                console.log('Mailbox item:', item);
-                
-                if (!item) {
-                    throw new Error('No email item found. Please open an email first.');
-                }
-                
-                // Get basic email properties with more error checking
-                emailData.subject = item.subject || 'No subject';
-                console.log('Subject:', emailData.subject);
-                
-                if (item.sender) {
-                    emailData.sender = item.sender.displayName + " <" + item.sender.emailAddress + ">";
-                    emailData.from = item.sender.displayName;
+            const item = Office.context.mailbox.item;
+            
+            // Get basic email properties
+            emailData.subject = item.subject;
+            emailData.sender = item.sender.displayName + " <" + item.sender.emailAddress + ">";
+            emailData.dateTimeCreated = item.dateTimeCreated;
+            
+            // Display in UI
+            document.getElementById('emailSubject').textContent = emailData.subject || 'No subject';
+            document.getElementById('emailSender').textContent = emailData.sender || 'Unknown sender';
+            document.getElementById('emailDate').textContent = emailData.dateTimeCreated ? 
+                new Date(emailData.dateTimeCreated).toLocaleDateString() : 'Unknown date';
+            
+            // Get email body
+            item.body.getAsync(Office.CoercionType.Html, (result) => {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    emailData.bodyHtml = result.value;
+                    console.log('Email body loaded successfully');
                 } else {
-                    emailData.sender = 'Unknown sender';
-                    emailData.from = 'Unknown sender';
+                    console.error('Failed to load email body:', result.error);
                 }
-                console.log('From:', emailData.from);
-                
-                emailData.dateTimeCreated = item.dateTimeCreated;
-                console.log('Date:', emailData.dateTimeCreated);
-                
-                // Display in UI immediately
-                document.getElementById('emailSubject').textContent = emailData.subject;
-                document.getElementById('emailSender').textContent = emailData.from;
-                document.getElementById('emailDate').textContent = emailData.dateTimeCreated ? 
-                    new Date(emailData.dateTimeCreated).toLocaleDateString() : 'Unknown date';
-                
-                console.log('UI updated with email data');
-                
-                // Get email body
-                if (item.body && item.body.getAsync) {
-                    item.body.getAsync(Office.CoercionType.Text, (result) => {
-                        if (result.status === Office.AsyncResultStatus.Succeeded) {
-                            emailData.bodyText = result.value;
-                            console.log('Email body loaded successfully');
-                        } else {
-                            console.error('Failed to load email body:', result.error);
-                            emailData.bodyText = 'Failed to load email content';
-                        }
-                    });
-                } else {
-                    console.warn('Email body API not available');
-                    emailData.bodyText = 'Email body not accessible';
-                }
-                
-                console.log('Email data loaded:', emailData);
-                
-            } catch (error) {
-                console.error('Error loading email data:', error);
-                showStatus('❌ Error loading email data: ' + error.message, 'error');
-                
-                // Show error in UI
-                document.getElementById('emailSubject').textContent = 'Error: ' + error.message;
-                document.getElementById('emailSender').textContent = 'Error loading data';
-                document.getElementById('emailDate').textContent = 'Error loading data';
-            }
+            });
         }
 
-        // Generate professional PDF
-        function generatePDF() {
+        // Upload email to ACGI with PDF generation
+        async function uploadToACGI() {
             const uploadBtn = document.getElementById('uploadBtn');
+            const statusDiv = document.getElementById('status');
             const customerUrl = document.getElementById('customerUrl').value.trim();
-            
-            console.log('Starting PDF generation...');
             
             // Disable button and show processing status
             uploadBtn.disabled = true;
-            uploadBtn.textContent = '📄 Creating PDF...';
-            showStatus('Generating PDF file...', 'processing');
+            uploadBtn.textContent = '🔄 Checking email data...';
+            showStatus('Checking if email content is loaded...', 'processing');
             
             try {
-                // Check if jsPDF is available
-                console.log('Checking jsPDF availability...');
-                console.log('window.jspdf:', typeof window.jspdf);
-                
-                if (typeof window.jspdf === 'undefined') {
-                    throw new Error('jsPDF library not loaded. Please ensure jspdf.umd.min.js is accessible.');
-                }
-
-                const { jsPDF } = window.jspdf;
-                console.log('jsPDF loaded successfully');
-                
-                const doc = new jsPDF();
-                
-                // Add red border
-                doc.setDrawColor(255, 0, 0);
-                doc.setLineWidth(2);
-                doc.rect(10, 10, 190, 277);
-                
-                // Add title with star
-                doc.setFontSize(18);
-                doc.setTextColor(51, 122, 183);
-                doc.text('⭐ ' + emailData.subject, 20, 30);
-                
-                // Add separator line
-                doc.setDrawColor(51, 122, 183);
-                doc.setLineWidth(1);
-                doc.line(20, 35, 190, 35);
-                
-                // Add email metadata box
-                doc.setFillColor(245, 245, 245);
-                doc.rect(20, 45, 170, 25, 'F');
-                
-                // Add blue left border to metadata
-                doc.setFillColor(51, 122, 183);
-                doc.rect(20, 45, 3, 25, 'F');
-                
-                // Email details
-                doc.setFontSize(11);
-                doc.setTextColor(0, 0, 0);
-                doc.text('From: ' + emailData.from, 30, 55);
-                doc.text('Date: ' + (emailData.dateTimeCreated ? 
-                    new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown'), 30, 62);
-                
-                // Add Customer URL if provided
-                if (customerUrl) {
-                    doc.text('Customer: ' + customerUrl, 30, 69);
-                }
-                
-                // Email Content header
-                doc.setFontSize(14);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Email Content:', 20, 85);
-                
-                // Email body content
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
-                
-                if (emailData.bodyText) {
-                    const emailContent = emailData.bodyText.trim();
-                    const lines = doc.splitTextToSize(emailContent, 170);
+                // Check if email body is loaded
+                if (!emailData.bodyHtml) {
+                    showStatus('Email body not loaded yet. Waiting...', 'processing');
                     
-                    let yPosition = 95;
-                    for (let i = 0; i < lines.length; i++) {
-                        if (yPosition > 260) {
-                            doc.addPage();
-                            yPosition = 20;
-                            
-                            // Add border to new page
-                            doc.setDrawColor(255, 0, 0);
-                            doc.setLineWidth(2);
-                            doc.rect(10, 10, 190, 277);
-                        }
-                        
-                        doc.text(lines[i], 20, yPosition);
-                        yPosition += 5;
+                    // Wait for email body to load
+                    const item = Office.context.mailbox.item;
+                    const bodyResult = await new Promise((resolve) => {
+                        item.body.getAsync(Office.CoercionType.Html, resolve);
+                    });
+                    
+                    if (bodyResult.status === Office.AsyncResultStatus.Succeeded) {
+                        emailData.bodyHtml = bodyResult.value;
+                    } else {
+                        throw new Error('Failed to load email body');
                     }
                 }
                 
-                // Add footer
-                const footerY = Math.max(yPosition + 10, 270);
-                if (footerY > 270) {
-                    doc.addPage();
-                    doc.setDrawColor(255, 0, 0);
-                    doc.setLineWidth(2);
-                    doc.rect(10, 10, 190, 277);
+                // Debug: Show what we have in the status
+                const bodyLength = emailData.bodyHtml ? emailData.bodyHtml.length : 0;
+                const bodyPreview = emailData.bodyHtml ? emailData.bodyHtml.substring(0, 50) + '...' : 'No body';
+                
+                showStatus(`Debug: Subject="${emailData.subject}", Body length=${bodyLength}`, 'processing');
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Show debug for 2 seconds
+                
+                showStatus('Creating PDF from email content...', 'processing');
+                uploadBtn.textContent = '🔄 Creating PDF...';
+                
+                // Create simple, PDF-friendly content from scratch
+                const pdfElement = document.getElementById('emailContentForPDF');
+                
+                // Extract plain text from HTML email body
+                let plainTextContent = 'No content available';
+                if (emailData.bodyHtml) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = emailData.bodyHtml;
+                    plainTextContent = tempDiv.textContent || tempDiv.innerText || 'Could not extract content';
+                    // Limit length for PDF
+                    if (plainTextContent.length > 5000) {
+                        plainTextContent = plainTextContent.substring(0, 5000) + '\n\n[Content truncated for PDF generation]';
+                    }
                 }
                 
-                doc.setFontSize(8);
-                doc.setTextColor(128, 128, 128);
-                doc.text('Generated by ACGI Email Upload Tool - ' + new Date().toLocaleString(), 
-                    20, footerY > 270 ? 20 : footerY);
+                // Create completely clean HTML for PDF
+                pdfElement.innerHTML = `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #000;">
+                        <h1 style="color: #0078d4; border-bottom: 2px solid #0078d4; padding-bottom: 10px;">
+                            ${emailData.subject || 'No Subject'}
+                        </h1>
+                        
+                        <div style="background: #f5f5f5; padding: 15px; margin: 20px 0; border-left: 4px solid #0078d4;">
+                            <p><strong>From:</strong> ${emailData.sender || 'Unknown Sender'}</p>
+                            <p><strong>Date:</strong> ${emailData.dateTimeCreated ? new Date(emailData.dateTimeCreated).toLocaleString() : 'Unknown Date'}</p>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <h3 style="color: #333; border-bottom: 1px solid #ccc;">Email Content:</h3>
+                            <div style="white-space: pre-wrap; padding: 15px; background: #fafafa; border: 1px solid #ddd; margin-top: 10px;">
+${plainTextContent}
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #ccc; padding-top: 10px;">
+                            Generated by ACGI Email Upload Tool - ${new Date().toLocaleString()}
+                        </div>
+                    </div>
+                `;
                 
-                // Save with specific filename that matches your Power Automate flow
-                console.log('Saving PDF...');
-                doc.save('acgi-email-content.pdf');
+                // Show the PDF content element temporarily FOR DEBUGGING
+                const pdfElement = document.getElementById('emailContentForPDF');
+                pdfElement.classList.remove('hidden');
+                pdfElement.style.position = 'static'; // Make it visible
+                pdfElement.style.left = 'auto';
+                pdfElement.style.top = 'auto';
+                pdfElement.style.border = '2px solid red'; // Make it obvious
+                pdfElement.style.background = 'white';
+                pdfElement.style.padding = '10px';
                 
-                showStatus('✅ PDF created! File saved as "acgi-email-content.pdf"', 'success');
+                showStatus('DEBUG: PDF content now visible above. Check if content appears, then scroll down and click Upload again to generate PDF.', 'processing');
                 
-                // If customer URL provided, show additional helpful message
-                if (customerUrl) {
-                    setTimeout(() => {
-                        showStatus('🔄 Power Automate should detect the PDF and begin upload to ACGI...', 'processing');
-                    }, 2000);
-                }
+                // Wait for user to see the content
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                
+                showStatus('Generating PDF file...', 'processing');
+                
+                // Generate PDF with simple, reliable settings
+                const opt = {
+                    margin: 0.5,
+                    filename: 'email-for-acgi.pdf',
+                    image: { type: 'jpeg', quality: 0.8 },
+                    html2canvas: { 
+                        scale: 1,
+                        useCORS: false,
+                        allowTaint: true,
+                        logging: false,
+                        letterRendering: true
+                    },
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                };
+                
+                await html2pdf().set(opt).from(pdfElement).save();
+                
+                // Hide the PDF content element again
+                pdfElement.classList.add('hidden');
+                
+                showStatus('✅ PDF created! Email saved as "email-for-acgi.pdf". Check your Downloads folder, then run your Power Automate flow.', 'success');
                 
             } catch (error) {
                 console.error('PDF generation error:', error);
-                showStatus('❌ Error creating PDF: ' + error.message, 'error');
+                showStatus('❌ PDF generation failed: ' + error.message, 'error');
             } finally {
+                // Re-enable button
                 uploadBtn.disabled = false;
-                uploadBtn.textContent = '📄 Create PDF';
+                uploadBtn.textContent = '🚀 Upload to ACGI';
             }
         }
 
@@ -380,6 +331,7 @@
             statusDiv.className = 'status ' + type;
             statusDiv.classList.remove('hidden');
             
+            // Auto-hide success messages after 8 seconds
             if (type === 'success') {
                 setTimeout(() => {
                     statusDiv.classList.add('hidden');
