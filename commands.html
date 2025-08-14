@@ -1,14 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+  <!-- Prevent aggressive caching while we're debugging -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>ACGI Add-in Commands Bootstrap</title>
+  <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 <body>
-    <!-- This file is required for add-in commands but can be minimal -->
-    <script>
-        Office.onReady();
-    </script>
+  <!-- This file is required for add-in commands. Keep it minimal and bulletproof. -->
+  <script>
+    // Always initialize without throwing.
+    Office.onReady(function(info) {
+      try {
+        console.log('[commands] Office.js ready', info);
+      } catch (e) {
+        // Swallow any console failures in hardened environments.
+      }
+    });
+
+    // Extra safety: surface unexpected runtime errors for debugging.
+    window.addEventListener('error', function (e) {
+      try {
+        console.error('[commands] runtime error:', e.message);
+      } catch (_) {}
+    });
+  </script>
 </body>
 </html>
