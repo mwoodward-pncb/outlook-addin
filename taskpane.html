@@ -165,36 +165,71 @@
         // Load current email data
         function loadEmailData() {
             try {
+                console.log('Loading email data...');
+                console.log('Office.context:', Office.context);
+                console.log('Office.context.mailbox:', Office.context.mailbox);
+                
+                if (!Office.context.mailbox) {
+                    throw new Error('Office.context.mailbox not available');
+                }
+                
                 const item = Office.context.mailbox.item;
+                console.log('Mailbox item:', item);
                 
-                // Get basic email properties
+                if (!item) {
+                    throw new Error('No email item found. Please open an email first.');
+                }
+                
+                // Get basic email properties with more error checking
                 emailData.subject = item.subject || 'No subject';
-                emailData.sender = item.sender ? (item.sender.displayName + " <" + item.sender.emailAddress + ">") : 'Unknown sender';
-                emailData.from = item.sender ? item.sender.displayName : 'Unknown sender';
-                emailData.dateTimeCreated = item.dateTimeCreated;
+                console.log('Subject:', emailData.subject);
                 
-                // Display in UI
+                if (item.sender) {
+                    emailData.sender = item.sender.displayName + " <" + item.sender.emailAddress + ">";
+                    emailData.from = item.sender.displayName;
+                } else {
+                    emailData.sender = 'Unknown sender';
+                    emailData.from = 'Unknown sender';
+                }
+                console.log('From:', emailData.from);
+                
+                emailData.dateTimeCreated = item.dateTimeCreated;
+                console.log('Date:', emailData.dateTimeCreated);
+                
+                // Display in UI immediately
                 document.getElementById('emailSubject').textContent = emailData.subject;
                 document.getElementById('emailSender').textContent = emailData.from;
                 document.getElementById('emailDate').textContent = emailData.dateTimeCreated ? 
                     new Date(emailData.dateTimeCreated).toLocaleDateString() : 'Unknown date';
                 
+                console.log('UI updated with email data');
+                
                 // Get email body
-                item.body.getAsync(Office.CoercionType.Text, (result) => {
-                    if (result.status === Office.AsyncResultStatus.Succeeded) {
-                        emailData.bodyText = result.value;
-                        console.log('Email body loaded successfully');
-                    } else {
-                        console.error('Failed to load email body:', result.error);
-                        emailData.bodyText = 'Failed to load email content';
-                    }
-                });
+                if (item.body && item.body.getAsync) {
+                    item.body.getAsync(Office.CoercionType.Text, (result) => {
+                        if (result.status === Office.AsyncResultStatus.Succeeded) {
+                            emailData.bodyText = result.value;
+                            console.log('Email body loaded successfully');
+                        } else {
+                            console.error('Failed to load email body:', result.error);
+                            emailData.bodyText = 'Failed to load email content';
+                        }
+                    });
+                } else {
+                    console.warn('Email body API not available');
+                    emailData.bodyText = 'Email body not accessible';
+                }
                 
                 console.log('Email data loaded:', emailData);
                 
             } catch (error) {
                 console.error('Error loading email data:', error);
                 showStatus('❌ Error loading email data: ' + error.message, 'error');
+                
+                // Show error in UI
+                document.getElementById('emailSubject').textContent = 'Error: ' + error.message;
+                document.getElementById('emailSender').textContent = 'Error loading data';
+                document.getElementById('emailDate').textContent = 'Error loading data';
             }
         }
 
